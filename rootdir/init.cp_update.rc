@@ -169,8 +169,8 @@ loglevel 3
     write /proc/sys/kernel/sched_compat_yield 1
     write /proc/sys/kernel/sched_child_runs_first 0
     write /proc/sys/kernel/randomize_va_space 2
-    write /proc/sys/kernel/kptr_restrict 2
-    write /proc/sys/kernel/dmesg_restrict 1
+    write /proc/sys/kernel/kptr_restrict 0
+    write /proc/sys/kernel/dmesg_restrict 0
     write /proc/sys/vm/mmap_min_addr 32768
     write /proc/sys/kernel/sched_rt_runtime_us 950000
     write /proc/sys/kernel/sched_rt_period_us 1000000
@@ -207,17 +207,17 @@ loglevel 3
 on fs
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
-#    mount yaffs2 mtd@system /system
-#    mount yaffs2 mtd@system /system ro remount
-#    mount yaffs2 mtd@userdata /data nosuid nodev
-#    mount yaffs2 mtd@cache /cache nosuid nodev
+     mount yaffs2 mtd@system /system
+     mount yaffs2 mtd@system /system ro remount
+     mount yaffs2 mtd@userdata /data nosuid nodev
+     mount yaffs2 mtd@cache /cache nosuid nodev
 
     wait /dev/block/mmcblk0p2
     mount ext4 /dev/block/mmcblk0p2 /system ro wait
     wait /dev/block/mmcblk0p3
-#   mount ext4 /dev/block/mmcblk0p3 /data wait nosuid nodev noatime nomblk_io_submit
-    mount ext4 /dev/block/mmcblk0p3 /data wait nosuid nodev noatime usedm discard,noauto_da_alloc,nodelalloc
-    mount ext4 /dev/block/mmcblk0p6 /cpimage wait nosuid nodev noatime nomblk_io_submit
+    mount ext4 /dev/block/mmcblk0p3 /data wait nosuid nodev noatime
+    mount ext4 /dev/block/mmcblk0p3 /data wait nosuid nodev noatime
+    mount ext4 /dev/block/mmcblk0p6 /cpimage wait nosuid nodev noatime
 
 on post-fs
     # once everything is setup, no need to modify /
@@ -336,7 +336,7 @@ on post-fs-data
     # must uncomment this line, otherwise encrypted filesystems
     # won't work.
     # Set indication (checked by vold) that we have finished this action
-    #setprop vold.post_fs_data_done 1
+    setprop vold.post_fs_data_done 1
 
 # Added by Yamaha Corporation.-----------------------------------------
     chmod 0666 /dev/snd/pcmC0D0c
@@ -359,8 +359,8 @@ on boot
     hostname localhost
     domainname localdomain
 
-#   chown system input /sys/bus/i2c/devices/4-000f/enable
-#   chown system input /sys/bus/i2c/devices/4-000f/poll
+    chown system input /sys/bus/i2c/devices/4-000f/enable
+    chown system input /sys/bus/i2c/devices/4-000f/poll
     chown system input /sys/bus/i2c/devices/7-0039/enable_ps_sensor
     chown system input /sys/bus/i2c/devices/7-0039/enable_als_sensor
     chown system input /sys/bus/i2c/devices/7-0039/als_poll_delay
@@ -497,7 +497,7 @@ on boot
     class_start main
 
 on nonencrypted
-    class_start late_start
+    class_start main
 
 on charger
     class_start charger
@@ -516,10 +516,10 @@ on property:vold.decrypt=trigger_restart_min_framework
 
 on property:vold.decrypt=trigger_restart_framework
     class_start main
-    class_start late_start
+    class_start main
 
 on property:vold.decrypt=trigger_shutdown_framework
-    class_reset late_start
+    class_reset main
     class_reset main
 
 ## Daemon processes to be run by init.
@@ -539,14 +539,13 @@ service console /system/bin/sh
     user shell
     group log
 
-#on property:ro.debuggable=1
-#    start console
+on property:ro.debuggable=1
+start console
 
 # adbd is controlled via property triggers in init.<platform>.usb.rc
 service adbd /sbin/adbd
     class core
     socket adbd stream 660 system system
-    disabled
     seclabel u:r:adbd:s0
 
 # adbd on at boot in emulator
